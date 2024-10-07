@@ -70,13 +70,15 @@ The following libraries are required for the machine learning pipeline:
 
 2. Create a virtual environment and activate it:
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate
+   conda create -n expense python=3.10
+   conda activate expense
    ```
 
 3. Install required dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install easyocr
+   pip install cohere
+   pip install python-dotenv
    ```
 
 4. Set up the environment variables (create a `.env` file):

@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 # Load the image using OpenCV
-image_path = '/content/bill3.jpg'
+image_path = '/Users/omdeshmukh/Downloads/MachineLearning/Projects/YourExpense/images/bill3.jpg'
 image = cv2.imread(image_path)
 
 # Initialize the EasyOCR reader for the English language (add more languages if needed)
@@ -36,8 +36,8 @@ image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 plt.figure(figsize=(10, 10))
 plt.imshow(image_rgb)
 plt.axis('off')
-plt.show()
-
+# plt.show()
+cv2.imwrite("../images/output.png", image_rgb)
 texto = ""
 
 # Output text and bounding boxes
