@@ -49,16 +49,14 @@ These instructions will get a copy of the project up and running on your local m
 Ensure you have the following installed:
 - **Python 3.8+**
 - **pip** (Python package manager)
-- **Docker** (optional, for containerized setup)
-- **Tesseract OCR** (for image-to-text extraction)
+- **dotenv** (For env file and API key management)
+- **Easy OCR** ([Git Hub Repo](https://github.com/JaidedAI/EasyOCR))
 
 ### ML Pipeline Dependencies
 The following libraries are required for the machine learning pipeline:
 - **OpenCV**: For image processing.
-- **Tesseract**: For OCR (Optical Character Recognition) to read text from bills.
-- **Pytesseract**: A Python wrapper for Tesseract.
-- **Scikit-learn**: For basic ML functionality.
-- **Flask** (or another web framework): For API integration.
+- **easyocr**: For OCR (Optical Character Recognition) to read text from bills.
+- **cohere**: For LLM api
 
 ---
 
