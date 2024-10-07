@@ -84,8 +84,7 @@ The following libraries are required for the machine learning pipeline:
 4. Set up the environment variables (create a `.env` file):
    ```bash
    # .env file
-   SECRET_KEY=your_secret_key
-   DATABASE_URL=your_database_url
+   COHERE_API_KEY=your_secret_key
    ```
 
 5. Set up the database:
