@@ -164,12 +164,6 @@ Please ensure all new features are covered by tests and linting passes successfu
 
 ---
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## Contact
 
 For any questions, feel free to reach out at [your-email@example.com](mailto:210010033@iitdh.ac.in).
