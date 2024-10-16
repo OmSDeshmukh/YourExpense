@@ -1,5 +1,6 @@
 package com.example.expensetracker.presentation.Profile
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +47,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.expensetracker.data.model.Category
 import com.example.expensetracker.presentation.destinations.HomeScreenRouteDestination
 import com.example.expensetracker.presentation.destinations.PotsScreenRouteDestination
 import com.example.expensetracker.presentation.destinations.StatsScreenRouteDestination
@@ -65,7 +70,12 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun ProfileScreenRoute(
     navigator: DestinationsNavigator
 ) {
+    val viewModel : ProfileScreenViewModel = hiltViewModel()
+    val state = viewModel.state.collectAsState().value
+
     ProfileScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
         navigator = navigator
     )
 }
@@ -73,6 +83,8 @@ fun ProfileScreenRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileScreen(
+    state : ProfileScreenState,
+    onEvent : (ProfileScreenEvent) -> Unit,
     navigator : DestinationsNavigator
 ) {
     var selectedItem by remember { mutableStateOf(3) }
@@ -177,7 +189,7 @@ private fun ProfileScreen(
                             ) {
                                 Text("Total Balance : ", fontSize = 20.sp)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Text("$1234567890", fontSize = 28.sp)
+                                Text((state.totalIncome - state.totalExpense).toString(), fontSize = 28.sp)
 
                                 Spacer(modifier = Modifier.height(28.dp))
 
@@ -192,7 +204,7 @@ private fun ProfileScreen(
                                     ) {
                                         Text("Income", fontSize = 16.sp)
                                         Spacer(modifier = Modifier.height(10.dp))
-                                        Text("$1234567890", fontSize = 20.sp)
+                                        Text(state.totalIncome.toString(), fontSize = 20.sp)
                                     }
 
                                     Column(
@@ -202,7 +214,7 @@ private fun ProfileScreen(
                                     ) {
                                         Text("Expenses", fontSize = 16.sp)
                                         Spacer(modifier = Modifier.height(10.dp))
-                                        Text("$1234567890", fontSize = 20.sp)
+                                        Text(state.totalExpense.toString(), fontSize = 20.sp)
                                     }
                                 }
                             }
@@ -211,7 +223,12 @@ private fun ProfileScreen(
                 }
 
                 item {
-                    CategoriesSection()
+                    CategoriesSection (
+                        state = state,
+                        onCategoryNameChanged = { onEvent(ProfileScreenEvent.CategoryNameChanged(it)) },
+                        onCategoryColorChanged = { onEvent(ProfileScreenEvent.CategoryColorChanged(it)) },
+                        onAddCategory = { onEvent(ProfileScreenEvent.AddCategory) }
+                    )
                 }
             }
         }
@@ -219,11 +236,13 @@ private fun ProfileScreen(
 }
 
 @Composable
-fun CategoriesSection()
-{
+fun CategoriesSection(
+    state: ProfileScreenState,
+    onCategoryNameChanged: (String) -> Unit,
+    onCategoryColorChanged: (Int) -> Unit,
+    onAddCategory: () -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
-    var categoryName by remember { mutableStateOf("") }
-    var categoryColor by remember { mutableStateOf(Color.Transparent) }
 
     if( showDialog )
     {
@@ -241,8 +260,8 @@ fun CategoriesSection()
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         OutlinedTextField(
-                            value = categoryName,
-                            onValueChange = { categoryName = it },
+                            value = state.categoryName,
+                            onValueChange = { onCategoryNameChanged(it) },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = color4,
@@ -257,17 +276,28 @@ fun CategoriesSection()
                                 .padding(4.dp)
                                 .clip(CircleShape)
                                 .border(1.dp, Color.Black)
-                                .background(categoryColor)
+                                .background(Color(state.categoryColor))
                         )
                     }
 
-                    ColorPicker()
+                    ColorPicker(
+                        color = Color(state.categoryColor),
+                        onColorChanged = { onCategoryColorChanged(it) }
+                    )
                 }
             },
-            confirmButton = { Text("Add",
-                color = color4,
-                fontSize = 26.sp,
-                modifier = Modifier.clickable { showDialog = false }) },
+            confirmButton = {
+                if( state.categoryName.isNotEmpty() )
+                {
+                    Text("Add",
+                        color = color4,
+                        fontSize = 26.sp,
+                        modifier = Modifier.clickable {
+                            onAddCategory()
+                            showDialog = false
+                        })
+                }
+            },
             dismissButton = { Text("Cancel",
                 color = color4,
                 fontSize = 26.sp,
@@ -301,14 +331,35 @@ fun CategoriesSection()
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
+
+        state.categories.forEach {
+            if( it.name.isNotEmpty() )
+            {
+                Row (
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(25.dp)
+                            .padding(end = 6.dp)
+                            .background(Color(it.color))
+                    ) {
+                        Text("${it.name[0]}", modifier = Modifier .align(Alignment.Center))
+                    }
+
+                    Text( text = it.name, color = color4 )
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun ColorPicker()
-{
+fun ColorPicker(
+    color: Color,
+    onColorChanged : (Int) -> Unit
+) {
     val controller = rememberColorPickerController()
-    var color by remember { mutableStateOf(Color.Transparent) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -327,7 +378,7 @@ fun ColorPicker()
                 .height(300.dp),
             controller = controller,
             onColorChanged = { colorEnvelope: ColorEnvelope ->
-                color = colorEnvelope.color
+                onColorChanged(colorEnvelope.color.toArgb())
             }
         )
         BrightnessSlider(

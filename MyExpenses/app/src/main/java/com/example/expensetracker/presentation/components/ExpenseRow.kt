@@ -36,7 +36,6 @@ fun ExpenseRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
-//            .background(if(selected) Color.Gray else Color.Transparent)
             .pointerInput(Unit) {
                 detectTapGestures (
                     onLongPress = {
