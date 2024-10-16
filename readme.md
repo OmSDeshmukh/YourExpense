@@ -8,7 +8,7 @@ YourExpense is a modern and intuitive expense tracking application designed to h
 ### 1. **Expense Management**
 - **Track Daily Expenses**: Log your expenses by adding amount, category, date, and a short description.
 - **Categories**: Organize your expenses by categories such as groceries, entertainment, transportation, utilities, dining, and more.
-- **Expense Reports**: Get detailed summaries of your expenses by day, week, or month.
+- **Expense Reports**: Get detailed summaries of your expenses by month or year.
 - **Custom Categories**: Create custom categories for your expenses.
 - **Expense History**: View past expenses, filter by date or category, and manage entries easily.
 
@@ -23,7 +23,6 @@ YourExpense is a modern and intuitive expense tracking application designed to h
 ### 3. **Analytics**
 - **Spending Trends**: Visualize your spending patterns and receive insights based on your historical data.
 - **Category Breakdown**: Get a detailed breakdown of expenses per category over customizable periods.
-- **Daily/Monthly Limits**: Set expense limits and get notified when you're close to exceeding them.
 
 ### 4. **Mobile-Friendly**
 - YourExpense is fully responsive, allowing you to log and review your expenses on the go via mobile or tablet devices.
@@ -167,6 +166,6 @@ Please ensure all new features are covered by tests and linting passes successfu
 
 ## Contact
 
-For any questions, feel free to reach out at [your-email@example.com](mailto:210010033@iitdh.ac.in).
+For any questions, feel free to reach out at [210010033@iitdh.ac.in](mailto:210010033@iitdh.ac.in) or [210010031@iitdh.ac.in](mailto:210010031@iitdh.ac.in).
 
 Enjoy tracking your expenses with **YourExpense**!
