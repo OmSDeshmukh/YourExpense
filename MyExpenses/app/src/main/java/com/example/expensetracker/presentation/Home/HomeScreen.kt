@@ -1,6 +1,7 @@
 package com.example.expensetracker.presentation.Home
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -69,7 +70,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.expensetracker.data.model.Item
 import com.example.expensetracker.data.model.ItemType
@@ -245,22 +249,22 @@ private fun HomeScreen(
                     .fillMaxSize()
                     .background(color1)
             ) {
+                CategoryTabRow(
+                    pagerState = pagerState,
+                    tabs = tabs,
+                    onTabSelected = { index ->
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                            onEvent(HomeScreenEvent.OnPagerPageChanged(index))
+                            onEvent(HomeScreenEvent.OnDateChanged(LocalDate.now()))
+                        }
+                    }
+                )
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-                    item {
-                        CategoryTabRow(
-                            pagerState = pagerState,
-                            tabs = tabs,
-                            onTabSelected = { index ->
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                    onEvent(HomeScreenEvent.OnDateChanged(LocalDate.now()))
-                                }
-                            }
-                        )
-                    }
 
                     item {
                         HorizontalPager(
@@ -313,14 +317,9 @@ private fun HomeScreen(
                                             date = state.date,
                                             onDateChanged = { onEvent(HomeScreenEvent.OnDateChanged(it)) },
                                         )
-
-                                        StatsBar()
-
-                                        for (day in 31 downTo 1) {
-                                            DailyExpenseCard(LocalDate.of(2024, 10, day))
-                                        }
-
-                                        Spacer(Modifier.height(88.dp))
+                                        StatsBar(state = state)
+                                        MonthlyData(state = state)
+                                        Spacer(Modifier.height(144.dp))
                                     }
                                 }
                                 2 -> {
@@ -333,7 +332,8 @@ private fun HomeScreen(
                                             date = state.date,
                                             onDateChanged = { onEvent(HomeScreenEvent.OnDateChanged(it)) },
                                         )
-                                        YearlyExpenses()
+                                        YearlyData(state = state)
+                                        Spacer(Modifier.height(144.dp))
                                     }
                                 }
                             }
@@ -654,13 +654,14 @@ fun ItemView(item: Item, isSelected: Boolean, onItemLongPress: (Int?) -> Unit)
             modifier = Modifier .clickable { onItemLongPress(item.id) } )
 
         Text(text = "Rs. ${String.format("%.2f", item.amount)}", color = color4,
-            modifier = Modifier .clickable { onItemLongPress(item.id) } )
+            modifier = Modifier.clickable { onItemLongPress(item.id) } )
     }
 }
 
 @Composable
-fun StatsBar()
-{
+fun StatsBar(
+    state : HomeScreenState
+) {
     Column (
         modifier = Modifier
             .fillMaxSize()
@@ -684,7 +685,7 @@ fun StatsBar()
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text( text = "Total Income (Credit)" )
-                Text( text = "Rs. 0.00" )
+                Text( text = "Rs. ${state.monthlyIncome}" )
             }
         }
 
@@ -706,7 +707,7 @@ fun StatsBar()
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text( text = "Total Expense (Debit)" )
-                Text( text = "Rs. 0.00" )
+                Text( text = "Rs. ${state.monthlyExpense}" )
             }
         }
 
@@ -727,8 +728,8 @@ fun StatsBar()
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text( text = "Total Savings" )
-                Text( text = "Rs. 0.00" )
+                Text( text = "Balance" )
+                Text( text = "Rs. ${state.monthlyBalance}" )
             }
         }
     }
@@ -736,140 +737,159 @@ fun StatsBar()
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun DailyExpenseCard(
-    currentDay : LocalDate
+fun MonthlyData(
+    state: HomeScreenState
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .padding(2.dp),
-        shape = RectangleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = color3,
-            contentColor = Color.White
-        ),
-        border = BorderStroke(2.dp, Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Row(
+    val len = state.date.lengthOfMonth()
+
+    var balance = 0.0
+
+    for( i in 1..len )
+    {
+        val creditSum: Double
+        val debitSum: Double
+
+        val creditItems = state.items.filter { it.date.dayOfMonth == i && it.type == ItemType.CREDIT }
+        creditSum = creditItems.sumOf { it.amount }
+
+        val debitItems = state.items.filter { it.date.dayOfMonth == i && it.type == ItemType.DEBIT }
+        debitSum = debitItems.sumOf { it.amount }
+
+        if( creditItems.isNotEmpty() || debitItems.isNotEmpty() )
+        {
+            balance += creditSum - debitSum
+
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, start = 8.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text( text = "${currentDay.dayOfMonth}  ${currentDay.month}  ${currentDay.year}" )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .clip(RoundedCornerShape(10.dp))
+                    .padding(2.dp),
+                shape = RectangleShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = color3,
+                    contentColor = Color.White
+                ),
+                border = BorderStroke(2.dp, Color.White)
             ) {
                 Column(
                     modifier = Modifier
-                        .weight(1f)
                         .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(top = 8.dp, start = 8.dp, end = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Text( text = "Income (Credit)" )
+                        Text( text = "$i  ${state.date.month}  ${state.date.year}" )
                     }
 
-//                    val currentDayItems = items.filter { it.date == currentDay && it.type == ItemType.CREDIT }
-//
-//                    currentDayItems.forEach {
-//                        Row(
-//                            modifier = Modifier
-//                                .fillMaxWidth(),
-//                            verticalAlignment = Alignment.CenterVertically,
-//                            horizontalArrangement = Arrangement.SpaceBetween
-//                        ) {
-//                            Text( text = it.name,
-//                                color = Color.White,
-//                                fontSize = 14.sp,
-//                                modifier = Modifier
-//                                    .weight(1f)
-//                                    .padding(end = 6.dp),
-//                                maxLines = 1,
-//                                overflow = TextOverflow.Ellipsis)
-//
-//                            Text( text = "Rs. ${String.format("%.2f", it.amount)}",
-//                                color = Color.White,
-//                                fontSize = 14.sp)
-//                        }
-//                    }
-                }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text( text = "Income (Credit)" )
+                            }
 
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                            creditItems.forEach {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text( text = it.name,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 6.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis)
+
+                                    Text( text = "Rs. ${String.format("%.2f", it.amount)}",
+                                        color = Color.White,
+                                        fontSize = 14.sp)
+                                }
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text( text = "Expense (Debit)" )
+                            }
+
+                            debitItems.forEach {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text( text = it.name,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 6.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis)
+
+                                    Text( text = "Rs. ${String.format("%.2f", it.amount)}",
+                                        color = Color.White,
+                                        fontSize = 14.sp)
+                                }
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text( text = "Expense (Debit)" )
+                        Text("Balance = Rs. $balance")
                     }
-
-//                    val currentDayItems = items.filter { it.date == currentDay && it.type == ItemType.DEBIT }
-//
-//                    currentDayItems.forEach {
-//                        Row(
-//                            modifier = Modifier
-//                                .fillMaxWidth(),
-//                            verticalAlignment = Alignment.CenterVertically,
-//                            horizontalArrangement = Arrangement.SpaceBetween
-//                        ) {
-//                            Text( text = it.name,
-//                                color = Color.White,
-//                                fontSize = 14.sp,
-//                                modifier = Modifier
-//                                    .weight(1f)
-//                                    .padding(end = 6.dp),
-//                                maxLines = 1,
-//                                overflow = TextOverflow.Ellipsis)
-//
-//                            Text( text = "Rs. ${String.format("%.2f", it.amount)}",
-//                                color = Color.White,
-//                                fontSize = 14.sp)
-//                        }
-//                    }
                 }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text("Balance = Rs. 9999")
             }
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun YearlyExpenses()
-{
+fun YearlyData(
+    state: HomeScreenState
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -896,12 +916,17 @@ fun YearlyExpenses()
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("C / F", color = color4)
-            Text("000.000", color = color4)
+            Text("${state.yearlyBalance}", color = color4)
         }
 
         val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
-        months.forEach {
+        months.forEach {month ->
+            val monthlyItems = state.items.filter { it.date.month.toString().substring(0, 3) == month.uppercase() }
+            val monthlyIncome = monthlyItems.filter { it.type == ItemType.CREDIT }.sumOf { it.amount }
+            val monthlyExpense = monthlyItems.filter { it.type == ItemType.DEBIT }.sumOf { it.amount }
+            val monthlyBalance = monthlyIncome - monthlyExpense
+
             Column {
                 Row(
                     modifier = Modifier
@@ -910,22 +935,22 @@ fun YearlyExpenses()
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(it, modifier = Modifier .weight(0.75f), color = color4)
+                    Text(month, modifier = Modifier .weight(0.75f), color = color4)
 
-                    Text("12345.67",
+                    Text("$monthlyIncome",
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = 24.dp),
                         color = color4,
                         textAlign = TextAlign.End)
 
-                    Text("12345.67",
+                    Text("$monthlyExpense",
                         modifier = Modifier
                             .weight(1f),
                         color = color4,
                         textAlign = TextAlign.End)
 
-                    Text("12345.67",
+                    Text("$monthlyBalance",
                         modifier = Modifier
                             .weight(1f),
                         color = color4,

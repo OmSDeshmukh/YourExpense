@@ -42,6 +42,9 @@ class HomeScreenViewModel @Inject constructor(
     private val _data = MutableStateFlow<NetworkResponse<ImageData>>(NetworkResponse.Loading)
     var data : StateFlow<NetworkResponse<ImageData>> = _data
 
+    private val _pagerPage = MutableStateFlow(0)
+    val pagerState : StateFlow<Int> = _pagerPage
+
     init {
         fetchItems(LocalDate.now())
     }
@@ -57,6 +60,53 @@ class HomeScreenViewModel @Inject constructor(
                     itemType = ItemType.DEBIT,
                     date = date,
                     items = items,
+                )
+
+                if( _pagerPage.value == 1 )
+                    fetchMonthlyData()
+
+                if( _pagerPage.value == 2 )
+                    fetchYearlyData()
+            }
+        }
+    }
+
+    private fun fetchMonthlyData()
+    {
+        viewModelScope.launch {
+            val month = String.format("%02d", _state.value.date.monthValue)
+            val year = _state.value.date.year.toString()
+
+            itemRepo.getItemsByMonth(month, year).collect { items ->
+                val totalIncome = items.filter { it.type == ItemType.CREDIT }.sumOf { it.amount }
+                val totalExpense = items.filter { it.type == ItemType.DEBIT }.sumOf { it.amount }
+                val balance = totalIncome - totalExpense
+
+                _state.value = _state.value.copy(
+                    items = items,
+                    monthlyIncome = totalIncome,
+                    monthlyExpense = totalExpense,
+                    monthlyBalance = balance,
+                )
+            }
+        }
+    }
+
+    private fun fetchYearlyData()
+    {
+        viewModelScope.launch {
+            val year = _state.value.date.year.toString()
+
+            itemRepo.getItemsByYear(year).collect { items ->
+                val totalIncome = items.filter { it.type == ItemType.CREDIT }.sumOf { it.amount }
+                val totalExpense = items.filter { it.type == ItemType.DEBIT }.sumOf { it.amount }
+                val balance = totalIncome - totalExpense
+
+                _state.value = _state.value.copy(
+                    items = items,
+                    yearlyIncome = totalIncome,
+                    yearlyExpense = totalExpense,
+                    yearlyBalance = balance,
                 )
             }
         }
@@ -119,6 +169,9 @@ class HomeScreenViewModel @Inject constructor(
                     itemPrice = "",
                     itemCategory = null,
                     itemType = ItemType.DEBIT)
+            }
+            is HomeScreenEvent.OnPagerPageChanged -> {
+                _pagerPage.value = event.page
             }
         }
     }

@@ -9,6 +9,7 @@ sealed class HomeScreenEvent
     data class OnItemCategoryChanged(val itemCategory : Int) : HomeScreenEvent()
     data class OnDateChanged(val date : LocalDate) : HomeScreenEvent()
     data class OnItemLongPress(val itemId : Int?) : HomeScreenEvent()
+    data class OnPagerPageChanged(val page : Int) : HomeScreenEvent()
     data object OnItemTypeChanged : HomeScreenEvent()
     data object OnAddItemClicked : HomeScreenEvent()
     data object OnDeleteItemClicked : HomeScreenEvent()
