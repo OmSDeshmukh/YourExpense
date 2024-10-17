@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +28,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -189,7 +195,7 @@ private fun ProfileScreen(
                             ) {
                                 Text("Total Balance : ", fontSize = 20.sp)
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Text((state.totalIncome - state.totalExpense).toString(), fontSize = 28.sp)
+                                Text(state.balance.toString(), fontSize = 28.sp)
 
                                 Spacer(modifier = Modifier.height(28.dp))
 
@@ -227,7 +233,9 @@ private fun ProfileScreen(
                         state = state,
                         onCategoryNameChanged = { onEvent(ProfileScreenEvent.CategoryNameChanged(it)) },
                         onCategoryColorChanged = { onEvent(ProfileScreenEvent.CategoryColorChanged(it)) },
-                        onAddCategory = { onEvent(ProfileScreenEvent.AddCategory) }
+                        onCategorySelected = { onEvent(ProfileScreenEvent.OnCategorySelected(it)) },
+                        onAddCategory = { onEvent(ProfileScreenEvent.AddCategory) },
+                        onDeleteCategory = { onEvent(ProfileScreenEvent.DeleteCategory) }
                     )
                 }
             }
@@ -240,9 +248,12 @@ fun CategoriesSection(
     state: ProfileScreenState,
     onCategoryNameChanged: (String) -> Unit,
     onCategoryColorChanged: (Int) -> Unit,
-    onAddCategory: () -> Unit
+    onCategorySelected: (Int) -> Unit,
+    onAddCategory: () -> Unit,
+    onDeleteCategory: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var deleteDialog by remember { mutableStateOf(false) }
 
     if( showDialog )
     {
@@ -309,6 +320,40 @@ fun CategoriesSection(
         )
     }
 
+    if( deleteDialog )
+    {
+        AlertDialog(
+            onDismissRequest = { deleteDialog = false },
+            title = { Text("Delete Category") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Are you sure you want to delete this category?")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        deleteDialog = false
+                        onDeleteCategory()
+                    },
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { deleteDialog = false },
+                ) {
+                    Text("No")
+                }
+            },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -332,22 +377,37 @@ fun CategoriesSection(
         }
         Spacer(modifier = Modifier.height(10.dp))
 
-        state.categories.forEach {
-            if( it.name.isNotEmpty() )
-            {
-                Row (
-                    verticalAlignment = Alignment.CenterVertically,
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(3),
+            verticalItemSpacing = 4.dp,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth().height(400.dp)
+        ) {
+            items(state.categories) { category ->
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(category.color))
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onLongPress = {
+                                    category.id?.let { onCategorySelected(it) }
+                                    deleteDialog = true
+                                },
+                                onTap = {
+                                    category.id?.let { onCategorySelected(it) }
+                                    showDialog = true
+                                }
+                            )
+                        }
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(25.dp)
-                            .padding(end = 6.dp)
-                            .background(Color(it.color))
-                    ) {
-                        Text("${it.name[0]}", modifier = Modifier .align(Alignment.Center))
-                    }
-
-                    Text( text = it.name, color = color4 )
+                    Text(
+                        text = category.name,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(8.dp).align(Alignment.Center)
+                    )
                 }
             }
         }

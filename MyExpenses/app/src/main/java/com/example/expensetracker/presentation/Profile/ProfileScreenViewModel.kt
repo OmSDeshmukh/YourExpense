@@ -9,6 +9,7 @@ import com.example.expensetracker.data.model.Category
 import com.example.expensetracker.data.model.ItemType
 import com.example.expensetracker.data.repo.CategoryRepo
 import com.example.expensetracker.data.repo.ItemRepo
+import com.example.expensetracker.data.repo.PotRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,26 +20,31 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileScreenViewModel @Inject constructor(
     private val categoryRepo: CategoryRepo,
-    private val itemRepo : ItemRepo
+    private val itemRepo : ItemRepo,
+    private val potRepo: PotRepo
 ) : ViewModel()
 {
     private val _state = MutableStateFlow(ProfileScreenState())
     val state : StateFlow<ProfileScreenState> = _state
 
+    private var totalIncome = 0.0
+    private var totalExpense = 0.0
+
     init {
-        fetchDetails()
+        fetchItems()
+        fetchPots()
         fetchCategories()
     }
 
-    private fun fetchDetails()
+    private fun fetchItems()
     {
         viewModelScope.launch {
             itemRepo.getAllItems().collect { items ->
-                val totalIncome = items
+                totalIncome = items
                     .filter { it.type == ItemType.CREDIT }
                     .sumOf { it.amount }
 
-                val totalExpense = items
+                totalExpense = items
                     .filter { it.type == ItemType.DEBIT }
                     .sumOf { it.amount }
 
@@ -49,6 +55,23 @@ class ProfileScreenViewModel @Inject constructor(
             }
         }
     }
+
+    private fun fetchPots()
+    {
+        viewModelScope.launch {
+            potRepo.getAllPots().collect { pot ->
+                val potAmount = pot.sumOf { it.sofar }.toDouble()
+
+                _state.value = _state.value.copy(
+                    balance = (totalIncome - totalExpense) - potAmount
+                )
+            }
+
+            Log.d("fetchPots", "Total Income: $totalIncome")
+            Log.d("fetchPots", "Total Expense: $totalExpense")
+        }
+    }
+
 
     private fun fetchCategories()
     {
@@ -95,6 +118,18 @@ class ProfileScreenViewModel @Inject constructor(
                         )
                     )
 
+                    _state.value = _state.value.copy(
+                        id = null,
+                        categoryName = "",
+                        categoryColor = Color.Transparent.toArgb()
+                    )
+                }
+            }
+            is ProfileScreenEvent.DeleteCategory -> {
+                viewModelScope.launch {
+                    _state.value.id?.let { id ->
+                        categoryRepo.deleteCategoryById(id)
+                    }
                     _state.value = _state.value.copy(
                         id = null,
                         categoryName = "",

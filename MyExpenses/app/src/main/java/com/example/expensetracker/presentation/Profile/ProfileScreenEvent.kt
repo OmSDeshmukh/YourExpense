@@ -6,4 +6,5 @@ sealed class ProfileScreenEvent
     data class CategoryColorChanged(val categoryColor : Int) : ProfileScreenEvent()
     data class OnCategorySelected(val id : Int) : ProfileScreenEvent()
     data object AddCategory : ProfileScreenEvent()
+    data object DeleteCategory : ProfileScreenEvent()
 }
