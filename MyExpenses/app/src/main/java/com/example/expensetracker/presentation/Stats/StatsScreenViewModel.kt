@@ -37,6 +37,18 @@ class StatsScreenViewModel @Inject constructor(
                 )
             }
         }
+
+        fetchCategories()
+    }
+
+    private fun fetchCategories() {
+        viewModelScope.launch {
+            categoryRepo.getAllCategories().collect { categories ->
+                _state.value = _state.value.copy(
+                    categories = categories
+                )
+            }
+        }
     }
 
     private fun fetchItems(date : LocalDate) {

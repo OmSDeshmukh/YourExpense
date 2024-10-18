@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -55,6 +57,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -177,12 +181,12 @@ private fun StatsScreen(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clickable {
-                                    when (selectedOption)
-                                    {
+                                    when (selectedOption) {
                                         "Monthly" -> {
                                             val dte = state.date.minusMonths(1)
                                             onEvent(StatsScreenEvent.OnDateChanged(dte, "Month"))
                                         }
+
                                         "Yearly" -> {
                                             val dte = state.date.minusYears(1)
                                             onEvent(StatsScreenEvent.OnDateChanged(dte, "Year"))
@@ -346,23 +350,24 @@ private fun StatsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            when (selected) {
-                                0 -> { Text("Total Income (Credit)", color = color4) }
-                                1 -> { Text("Total Expense (Debit)", color = color4) }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("$1234567890", fontSize = 20.sp, color = color4)
-                        }
-
-//                        val categories = items.groupBy { it.categoryId?.name ?: "" }.mapValues { entry ->
-//                            entry.value.sumOf { it.amount }
+//                        Column(
+//                            horizontalAlignment = Alignment.CenterHorizontally
+//                        ) {
+//                            when (selected) {
+//                                0 -> { Text("Total Income (Credit)", color = color4) }
+//                                1 -> { Text("Total Expense (Debit)", color = color4) }
+//                            }
+//                            Spacer(modifier = Modifier.height(16.dp))
+//                            Text("$1234567890", fontSize = 20.sp, color = color4)
 //                        }
 
-//                        val totalSpending = categories.values.sum()
-                        val colors = listOf(Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Magenta)
+                        val categories = state.items
+                            .groupBy { it.categoryId }
+                            .mapValues { entry ->
+                                entry.value.sumOf { it.amount }
+                            }
+                            .filterKeys { it != null }
+                        val totalSpending = categories.values.sum()
 
                         Canvas(
                             modifier = Modifier
@@ -372,19 +377,24 @@ private fun StatsScreen(
                             val radius = size.minDimension / 3
                             val thickness = radius * 0.3f
 
-//                            categories.entries.forEachIndexed { index, categoryEntry ->
-//                                val sweepAngle = (categoryEntry.value / totalSpending * 360f).toFloat()
-//                                drawArc(
-//                                    color = colors[index % colors.size],
-//                                    startAngle = startAngle,
-//                                    sweepAngle = sweepAngle,
-//                                    useCenter = false,
-//                                    topLeft = Offset(size.width / 2 - radius, size.height / 2 - radius),
-//                                    size = Size(radius * 2, radius * 2),
-//                                    style = Stroke(width = thickness)
-//                                )
-//                                startAngle += sweepAngle
-//                            }
+                            categories.forEach { categoryEntry ->
+                                val category = state.categories.find { it.id == categoryEntry.key }
+                                if( category != null )
+                                {
+                                    val sweepAngle = (categoryEntry.value / totalSpending * 360f).toFloat()
+
+                                    drawArc(
+                                        color = Color(category.color),
+                                        startAngle = startAngle,
+                                        sweepAngle = sweepAngle,
+                                        useCenter = false,
+                                        topLeft = Offset(size.width / 2 - radius, size.height / 2 - radius),
+                                        size = Size(radius * 2, radius * 2),
+                                        style = Stroke(width = thickness)
+                                    )
+                                    startAngle += sweepAngle
+                                }
+                            }
                         }
                     }
                 }   // Pie Chart
@@ -394,12 +404,13 @@ private fun StatsScreen(
                 item {
                     Text("All Categories", color = color4)
 
-//                    val categories = items.groupBy { it.category?.name ?: "" }.mapValues { entry ->
-//                        entry.value.sumOf { it.amount }
-//                    }
-
-//                    val totalSpending = categories.values.sum()
-                    val colors = listOf(Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Magenta, Color.LightGray)
+                    val categories = state.items
+                        .groupBy { it.categoryId }
+                        .mapValues { entry ->
+                            entry.value.sumOf { it.amount }
+                        }
+                        .filterKeys { it != null }
+                    val totalSpending = categories.values.sum()
 
                     Row(
                         modifier = Modifier
@@ -411,56 +422,72 @@ private fun StatsScreen(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-//                            categories.entries.forEachIndexed { index, categoryEntry ->
-//                                Row (
-//                                    modifier = Modifier.padding(top = 2.dp),
-//                                    verticalAlignment = Alignment.CenterVertically,
-//                                ) {
-//                                    Box(
-//                                        modifier = Modifier
-//                                            .size(25.dp)
-//                                            .padding(end = 6.dp)
-//                                            .background(colors[index])
-//                                    ) {
-//                                        Text("${categoryEntry.key[0]}", modifier = Modifier.align(Alignment.Center), color = color4)
-//                                    }
-//
-//                                    Text( text = categoryEntry.key, color = color4 )
-//                                }
-//                            }
+                            categories.forEach { categoryEntry ->
+                                val category = state.categories.find { it.id == categoryEntry.key }
+                                if( category != null )
+                                {
+                                    Row (
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(25.dp)
+                                                .padding(end = 6.dp)
+                                                .background(Color(category.color))
+                                        ) {
+                                            Text("${category.name[0]}", modifier = Modifier.align(Alignment.Center), color = Color.White)
+                                        }
+
+                                        Text( text = category.name, color = color4 )
+                                    }
+                                }
+                            }
                         }
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-//                            categories.entries.forEachIndexed { index, categoryEntry ->
-//                                Box(
-//                                    modifier = Modifier
-//                                        .size(25.dp)
-//                                        .clip(CircleShape)
-//                                        .background(colors[index])
-//                                        .padding(top = 2.dp)
-//                                )
-//                            }
+                            categories.forEach { categoryEntry ->
+                                val category = state.categories.find { it.id == categoryEntry.key }
+                                if( category != null )
+                                {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(25.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(category.color))
+                                            .padding(top = 2.dp)
+                                    )
+                                }
+                            }
                         }
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-//                            categories.entries.forEachIndexed { index, categoryEntry ->
-//                                Text(
-//                                    text = "${(categoryEntry.value / totalSpending * 360f).toFloat()}",
-//                                    modifier = Modifier.padding(top = 2.dp),
-//                                    color = color4 )
-//                            }
+                            categories.forEach { categoryEntry ->
+                                val category = state.categories.find { it.id == categoryEntry.key }
+                                if( category != null )
+                                {
+                                    Text(
+                                        text = "${((categoryEntry.value / totalSpending) * 100f).toFloat()} %",
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        color = color4 )
+                                }
+                            }
                         }
                         Column(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-//                            categories.entries.forEachIndexed { index, categoryEntry ->
-//                                Text(
-//                                    text = String.format("%.2f", categoryEntry.value),
-//                                    modifier = Modifier.padding(top = 2.dp),
-//                                    color = color4 )
-//                            }
+                            categories.forEach { categoryEntry ->
+                                val category = state.categories.find { it.id == categoryEntry.key }
+                                if( category != null )
+                                {
+                                    Text(
+                                        text = String.format("%.2f", categoryEntry.value),
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        color = color4 )
+                                }
+                            }
                         }
                     }
                 }   // All Categories

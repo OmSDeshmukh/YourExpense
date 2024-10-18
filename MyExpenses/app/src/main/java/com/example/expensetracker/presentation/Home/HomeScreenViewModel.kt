@@ -47,6 +47,7 @@ class HomeScreenViewModel @Inject constructor(
 
     init {
         fetchItems(LocalDate.now())
+        fetchCategories()
     }
 
     private fun fetchItems(date : LocalDate) {
@@ -71,8 +72,7 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    private fun fetchMonthlyData()
-    {
+    private fun fetchMonthlyData() {
         viewModelScope.launch {
             val month = String.format("%02d", _state.value.date.monthValue)
             val year = _state.value.date.year.toString()
@@ -92,8 +92,7 @@ class HomeScreenViewModel @Inject constructor(
         }
     }
 
-    private fun fetchYearlyData()
-    {
+    private fun fetchYearlyData() {
         viewModelScope.launch {
             val year = _state.value.date.year.toString()
 
@@ -108,6 +107,14 @@ class HomeScreenViewModel @Inject constructor(
                     yearlyExpense = totalExpense,
                     yearlyBalance = balance,
                 )
+            }
+        }
+    }
+
+    private fun fetchCategories() {
+        viewModelScope.launch {
+            categoryRepo.getAllCategories().collect { categories ->
+                _state.value = _state.value.copy(categories = categories)
             }
         }
     }

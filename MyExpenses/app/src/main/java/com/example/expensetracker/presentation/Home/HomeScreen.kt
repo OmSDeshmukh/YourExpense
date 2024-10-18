@@ -1,7 +1,6 @@
 package com.example.expensetracker.presentation.Home
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -19,6 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -71,10 +74,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.expensetracker.data.model.Category
 import com.example.expensetracker.data.model.Item
 import com.example.expensetracker.data.model.ItemType
 import com.example.expensetracker.presentation.components.DateBar
@@ -265,7 +268,6 @@ private fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-
                     item {
                         HorizontalPager(
                             state = pagerState,
@@ -290,6 +292,7 @@ private fun HomeScreen(
 
                                         Credits(
                                             items = credits,
+                                            categories = state.categories,
                                             selectedItemId = selectedItemId,
                                             onItemLongPress = { id ->
                                                 onEvent(HomeScreenEvent.OnItemLongPress(id))
@@ -298,6 +301,7 @@ private fun HomeScreen(
                                         )
                                         Debits(
                                             items = debits,
+                                            categories = state.categories,
                                             selectedItemId = selectedItemId,
                                             onItemLongPress = { id ->
                                                 onEvent(HomeScreenEvent.OnItemLongPress(id))
@@ -341,6 +345,55 @@ private fun HomeScreen(
                     }
 
                     item {
+                        var categoriesList by remember { mutableStateOf(false) }
+
+                        if( categoriesList ) {
+                            AlertDialog(
+                                onDismissRequest = { categoriesList = false },
+                                title = { Text("Select a Category") },
+                                text = {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(3)
+                                    ) {
+                                        items(state.categories) { category ->
+                                            Card(
+                                                modifier = Modifier
+                                                    .padding(4.dp)
+                                                    .clickable {
+                                                        onEvent(HomeScreenEvent.OnItemCategoryChanged(category.id))
+                                                        categoriesList = false
+                                                    },
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = Color(category.color),
+                                                    contentColor = Color.White
+                                                )
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .padding(8.dp),
+                                                    verticalArrangement = Arrangement.Center,
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text(category.name)
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            onEvent(HomeScreenEvent.OnItemCategoryChanged(null))
+                                            categoriesList = false
+                                        }
+                                    ) { Text("None") }
+                                },
+                                dismissButton = {}
+                            )
+                        }
+
                         if (showBottomSheet) {
                             ModalBottomSheet(
                                 onDismissRequest = {
@@ -376,9 +429,7 @@ private fun HomeScreen(
                                                 modifier = Modifier.fillMaxSize(),
                                                 verticalArrangement = Arrangement.Center,
                                                 horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text("Income (Credit)")
-                                            }
+                                            ) { Text("Income (Credit)") }
                                         }
                                         Card(
                                             modifier = Modifier
@@ -396,9 +447,7 @@ private fun HomeScreen(
                                                 modifier = Modifier.fillMaxSize(),
                                                 verticalArrangement = Arrangement.Center,
                                                 horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text("Expense (Debit)")
-                                            }
+                                            ) { Text("Expense (Debit)") }
                                         }
                                     }
 
@@ -406,16 +455,44 @@ private fun HomeScreen(
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        if( state.itemCategory == null ) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.categories),
+                                                contentDescription = "Add",
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clickable { categoriesList = true } )
+                                        }
+                                        else
+                                        {
+                                            val category : Category = state.categories.find { it.id == state.itemCategory }!!
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(Color(category.color))
+                                            ) {
+                                                Text("${category.name[0]}",
+                                                    modifier = Modifier.align(Alignment.Center).clickable { categoriesList = true },
+                                                    fontSize = 20.sp,
+                                                    color = Color.White)
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(4.dp))
+
                                         TextField(
                                             value = state.itemName,
                                             onValueChange = { onEvent(HomeScreenEvent.OnItemNameChanged(it)) },
                                             placeholder = { Text("Item Name") },
                                             singleLine = true,
-                                            modifier = Modifier.weight(2f) )
+                                            modifier = Modifier.weight(2f))
 
-                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
 
                                         TextField(
                                             value = state.itemPrice,
@@ -428,6 +505,8 @@ private fun HomeScreen(
 
                                     Spacer(modifier = Modifier.height(28.dp))
 
+                                    val color = if( state.itemName.isNotEmpty() && state.itemPrice.isNotEmpty() ) Color.Green else Color.Gray
+
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -438,11 +517,13 @@ private fun HomeScreen(
                                             modifier = Modifier
                                                 .padding(4.dp)
                                                 .clip(CircleShape)
-                                                .background(Color.Green)
+                                                .background(color)
                                                 .clickable {
-                                                    onEvent(HomeScreenEvent.OnAddItemClicked)
-                                                    showBottomSheet = false
-                                                    onLongPress = false
+                                                    if (color == Color.Green) {
+                                                        onEvent(HomeScreenEvent.OnAddItemClicked)
+                                                        showBottomSheet = false
+                                                        onLongPress = false
+                                                    }
                                                 }
                                         ) {
                                             Icon(
@@ -464,7 +545,9 @@ private fun HomeScreen(
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 24.dp, end = 16.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 24.dp, end = 16.dp)
             ) {
                 FloatingActionButton(
                     onClick = { navigator.navigate(CameraScreenRouteDestination) },
@@ -524,6 +607,7 @@ fun CategoryTabRow(
 @Composable
 fun Credits(
     items : List<Item>,
+    categories : List<Category>,
     selectedItemId : Int?,
     onItemLongPress : (Int?) -> Unit
 ) {
@@ -560,6 +644,7 @@ fun Credits(
         items.forEach {item ->
             ItemView(
                 item = item,
+                categories = categories,
                 isSelected = (item.id == selectedItemId),
                 onItemLongPress = { onItemLongPress(item.id) }
             )
@@ -576,6 +661,7 @@ fun Credits(
 @Composable
 fun Debits(
     items: List<Item>,
+    categories : List<Category>,
     selectedItemId: Int?,
     onItemLongPress: (Int?) -> Unit,
     viewModel: HomeScreenViewModel
@@ -612,6 +698,7 @@ fun Debits(
         items.forEach { item ->
             ItemView(
                 item = item,
+                categories = categories,
                 isSelected = (item.id == selectedItemId),
                 onItemLongPress = { itemId -> onItemLongPress(itemId) }
             )
@@ -640,8 +727,12 @@ fun Debits(
 }
 
 @Composable
-fun ItemView(item: Item, isSelected: Boolean, onItemLongPress: (Int?) -> Unit)
-{
+fun ItemView(
+    item: Item,
+    categories : List<Category>,
+    isSelected: Boolean,
+    onItemLongPress: (Int?) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -650,8 +741,30 @@ fun ItemView(item: Item, isSelected: Boolean, onItemLongPress: (Int?) -> Unit)
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = item.name, color = color4,
-            modifier = Modifier .clickable { onItemLongPress(item.id) } )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val category = categories.find { it.id == item.categoryId }
+
+            if( category != null )
+            {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(category.color))
+                ) {
+                    Text("${category.name[0]}",
+                        modifier = Modifier.align(Alignment.Center),
+                        fontSize = 18.sp,
+                        color = Color.White)
+                }
+            }
+
+            Text(text = item.name, color = color4,
+                modifier = Modifier.clickable { onItemLongPress(item.id) }.padding(2.dp) )
+        }
 
         Text(text = "Rs. ${String.format("%.2f", item.amount)}", color = color4,
             modifier = Modifier.clickable { onItemLongPress(item.id) } )

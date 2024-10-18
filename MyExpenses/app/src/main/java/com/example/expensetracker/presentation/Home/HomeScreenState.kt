@@ -2,6 +2,7 @@ package com.example.expensetracker.presentation.Home
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.example.expensetracker.data.model.Category
 import com.example.expensetracker.data.model.Item
 import com.example.expensetracker.data.model.ItemType
 import java.time.LocalDate
@@ -15,6 +16,7 @@ data class HomeScreenState (
     val itemType: ItemType = ItemType.DEBIT,
     val date : LocalDate = LocalDate.now(),
     val items : List<Item> = emptyList(),
+    val categories : List<Category> = emptyList(),
 
     val monthlyIncome : Double = 0.0,
     val monthlyExpense : Double = 0.0,
