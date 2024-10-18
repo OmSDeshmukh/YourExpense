@@ -72,6 +72,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.expensetracker.data.model.ItemType
 import com.example.expensetracker.presentation.destinations.HomeScreenRouteDestination
 import com.example.expensetracker.presentation.destinations.PotsScreenRouteDestination
 import com.example.expensetracker.presentation.destinations.ProfileScreenRouteDestination
@@ -82,6 +83,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Destination
@@ -112,49 +114,6 @@ private fun StatsScreen(
 
     Scaffold(
         topBar = {
-            var isDatePickerDialogOpen by rememberSaveable { mutableStateOf(false) }
-
-            if (isDatePickerDialogOpen)
-            {
-                val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = state.date
-                        .atStartOfDay(ZoneId.systemDefault())
-                        .toInstant()
-                        .toEpochMilli()
-                )
-
-                DatePickerDialog(
-                    onDismissRequest = { isDatePickerDialogOpen = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            val selectedDate = datePickerState.selectedDateMillis?.let { millis ->
-                                Instant
-                                    .ofEpochMilli(millis)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            }
-
-                            selectedDate?.let {
-                                onEvent(StatsScreenEvent.OnDateChanged(it, "Day"))
-                            }
-
-                            isDatePickerDialogOpen = false
-                        }) {
-                            Text(text = "Select")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { isDatePickerDialogOpen = false }) {
-                            Text(text = "Cancel")
-                        }
-                    },
-                ) {
-                    DatePicker(
-                        state = datePickerState
-                    )
-                }
-            }
-
             val statsList = listOf("Monthly", "Yearly")
             var expanded by remember { mutableStateOf(false) }
 
@@ -197,10 +156,8 @@ private fun StatsScreen(
 
                         when( selectedOption )
                         {
-                            "Monthly" -> { Text("${state.date.month}, ${state.date.year}", fontSize = 16.sp,
-                                modifier = Modifier.clickable { isDatePickerDialogOpen = true }) }
-                            "Yearly" -> { Text( "${state.date.year}", fontSize = 16.sp,
-                                modifier = Modifier.clickable { isDatePickerDialogOpen = true }) }
+                            "Monthly" -> { Text("${state.date.month}, ${state.date.year}", fontSize = 16.sp ) }
+                            "Yearly" -> { Text( "${state.date.year}", fontSize = 16.sp ) }
                         }
 
                         Icon(
@@ -289,8 +246,6 @@ private fun StatsScreen(
                 .background(color1)
                 .padding(8.dp)
         ) {
-            var selected by remember { mutableStateOf(0) }
-
             LazyColumn {
                 item {
                     Row(
@@ -301,12 +256,12 @@ private fun StatsScreen(
                             modifier = Modifier
                                 .height(30.dp)
                                 .width(150.dp)
-                                .clickable { selected = 0 },
+                                .clickable { onEvent(StatsScreenEvent.OnTypeChanged) },
                             shape = RoundedCornerShape(topStart = 100f, bottomStart = 100f),
                             border = BorderStroke(width = 0.5.dp, color = Color.Black),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (selected == 0) color4 else Color.White,
-                                contentColor = if (selected == 0) Color.White else color4
+                                containerColor = if (state.type == ItemType.CREDIT) color4 else Color.White,
+                                contentColor = if (state.type == ItemType.CREDIT) Color.White else color4
                             )
                         ) {
                             Column(
@@ -321,12 +276,12 @@ private fun StatsScreen(
                             modifier = Modifier
                                 .height(30.dp)
                                 .width(150.dp)
-                                .clickable { selected = 1 },
+                                .clickable { onEvent(StatsScreenEvent.OnTypeChanged) },
                             shape = RoundedCornerShape(topEnd = 100f, bottomEnd = 100f),
                             border = BorderStroke(width = 1.dp, color = Color.Black),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (selected == 1) color4 else Color.White,
-                                contentColor = if (selected == 1) Color.White else color4
+                                containerColor = if (state.type == ItemType.DEBIT) color4 else Color.White,
+                                contentColor = if (state.type == ItemType.DEBIT) Color.White else color4
                             )
                         ) {
                             Column(
@@ -343,30 +298,43 @@ private fun StatsScreen(
                 item { Spacer(modifier = Modifier.height(16.dp)) }
 
                 item {
+                    val totalCredit = state.items.filter { it.type == ItemType.CREDIT }.sumOf { it.amount }
+                    val totalDebit = state.items.filter { it.type == ItemType.DEBIT }.sumOf { it.amount }
+
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-//                        Column(
-//                            horizontalAlignment = Alignment.CenterHorizontally
-//                        ) {
-//                            when (selected) {
-//                                0 -> { Text("Total Income (Credit)", color = color4) }
-//                                1 -> { Text("Total Expense (Debit)", color = color4) }
-//                            }
-//                            Spacer(modifier = Modifier.height(16.dp))
-//                            Text("$1234567890", fontSize = 20.sp, color = color4)
-//                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            when (state.type) {
+                                ItemType.CREDIT -> {
+                                    Text("Total Income (Credit)", color = color4)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("$totalCredit", fontSize = 20.sp, color = color4)
+                                }
+                                ItemType.DEBIT -> {
+                                    Text("Total Expense (Debit)", color = color4)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("$totalDebit", fontSize = 20.sp, color = color4)
+                                }
+                            }
+                        }
 
-                        val categories = state.items
+                        var categories = state.items
+                            .filter { it.type == state.type }
                             .groupBy { it.categoryId }
                             .mapValues { entry ->
                                 entry.value.sumOf { it.amount }
                             }
                             .filterKeys { it != null }
+
+                        categories = categories.entries
+                            .sortedBy { it.value }
+                            .associate { it.key to it.value }
+
                         val totalSpending = categories.values.sum()
 
                         Canvas(
@@ -404,12 +372,18 @@ private fun StatsScreen(
                 item {
                     Text("All Categories", color = color4)
 
-                    val categories = state.items
+                    var categories = state.items
+                        .filter { it.type == state.type }
                         .groupBy { it.categoryId }
                         .mapValues { entry ->
                             entry.value.sumOf { it.amount }
                         }
                         .filterKeys { it != null }
+
+                    categories = categories.entries
+                        .sortedBy { it.value }
+                        .associate { it.key to it.value }
+
                     val totalSpending = categories.values.sum()
 
                     Row(
@@ -469,7 +443,7 @@ private fun StatsScreen(
                                 if( category != null )
                                 {
                                     Text(
-                                        text = "${((categoryEntry.value / totalSpending) * 100f).toFloat()} %",
+                                        text = "${((categoryEntry.value / totalSpending) * 100f).roundToInt()} %",
                                         modifier = Modifier.padding(top = 2.dp),
                                         color = color4 )
                                 }
@@ -495,19 +469,19 @@ private fun StatsScreen(
                 item {
                     Column {
                         state.items.forEach {
-                            Text(text = it.name, color = color4)
+                            if( it.type == state.type )
+                                Text(text = it.name, color = color4)
                         }
                     }
-                }
+                }   // All Items
 
                 item { Spacer(modifier = Modifier.height(75.dp)) }
 
                 item {
-                    if( state.items.isNotEmpty() )
-                    {
+                    if( state.items.isNotEmpty() ) {
                         val spendings by remember {
                             derivedStateOf {
-                                val graphItems = state.items.sortedBy { it.date }
+                                val graphItems = state.items.sortedBy { it.date }.filter { it.type == state.type }
 
                                 when (selectedOption) {
                                     "Monthly" -> {
@@ -645,41 +619,3 @@ private fun StatsScreen(
         }
     }
 }
-
-//                        val spendings = remember { mutableStateOf<List<Pair<Any, Double>>>(emptyList()) }
-//                        val graphItems by remember { derivedStateOf { state.items.sortedBy { it.date } } }
-//
-//                        when(selectedOption)
-//                        {
-//                            "Monthly" -> {
-//                                spendings.value = graphItems
-//                                            .groupBy { it.date }
-//                                            .map { (date, itemsForDay) ->
-//                                                val totalAmountForDay = itemsForDay.sumOf { it.amount }
-//                                                date to totalAmountForDay
-//                                            }
-//                                            .sortedBy { it.first }
-//                            }
-//
-//                            "Yearly" -> {
-//                                spendings.value = graphItems
-//                                            .groupBy { it.date.month }
-//                                            .map { (date, itemsForMonth) ->
-//                                                val totalAmountForMonth = itemsForMonth.sumOf { it.amount }
-//                                                date to totalAmountForMonth
-//                                            }
-//                                            .sortedBy { it.first }
-//                            }
-//                        }
-
-//                        val graphItems by remember { derivedStateOf { state.items.sortedBy { it.date } } }
-//
-//                        val spendings by remember { derivedStateOf {
-//                            graphItems
-//                                .groupBy { it.date }
-//                                .map { (date, itemsForDay) ->
-//                                    val totalAmountForDay = itemsForDay.sumOf { it.amount }
-//                                    date to totalAmountForDay
-//                                }
-//                                .sortedBy { it.first }
-//                        } }

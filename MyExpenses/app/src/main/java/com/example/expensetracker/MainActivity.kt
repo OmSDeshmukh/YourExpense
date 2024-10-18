@@ -63,30 +63,15 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//val categoriesList = listOf(
-//    Category(0, "Snacks"),
-//    Category(1, "Transport"),
-//    Category(2, "Housing"),
-//    Category(3, "Needs"),
-//    Category(4, "Wants"),
-//    Category(5, ".Dot")
-//)
-
-//@RequiresApi(Build.VERSION_CODES.O)
-//val items = listOf(
-//    Item(0, "Groceries1", 100.0, 0, ItemType.DEBIT, LocalDate.of(2024, 10, 2)), // Snacks
-//    Item(1, "Groceries2", 20.0, 0, ItemType.DEBIT, LocalDate.of(2024, 10, 1)),  // Snacks
-//    Item(2, "Groceries3", 50.0, 0, ItemType.DEBIT, LocalDate.of(2024, 10, 3)),  // Snacks
-//    Item(3, "Groceries4", 60.0, 0, ItemType.CREDIT, LocalDate.of(2024, 10, 2)), // Snacks
-//    Item(4, "Gas1", 50.0, 1, ItemType.DEBIT, LocalDate.of(2024, 10, 1)),        // Transport
-//    Item(5, "Gas2", 300.0, 1, ItemType.DEBIT, LocalDate.of(2024, 10, 3)),       // Transport
-//    Item(6, "Rent", 500.0, 2, ItemType.CREDIT, LocalDate.of(2024, 10, 2)),      // Housing
-//    Item(7, "Electricity", 100.0, 3, ItemType.DEBIT, LocalDate.of(2024, 10, 1)),// Needs
-//    Item(8, "Water", 50.0, 3, ItemType.DEBIT, LocalDate.of(2024, 10, 3)),       // Needs
-//    Item(9, "Food", 500.0, 3, ItemType.DEBIT, LocalDate.of(2024, 10, 2)),       // Needs
-//    Item(10, "Something1", 130.0, 4, ItemType.DEBIT, LocalDate.of(2024, 10, 1)),// Wants
-//    Item(11, "Something2", 270.0, 5, ItemType.CREDIT, LocalDate.of(2024, 10, 3))// .Dot
-//)
+/*  ISSUES
+    Pots Screen :-
+            Pot selected must be highlighted.
+    Stats Screen :-
+            Year to Month items are not changing
+            Graph is not getting rendered after date change or Income/Expense change.
+    Profile Screen :-
+            Balance is showing only subtracted pots value sometimes.
+*/
 
 /*  TODO
     Ability to crop the image.

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.expensetracker.data.model.ItemType
 import com.example.expensetracker.data.repo.CategoryRepo
 import com.example.expensetracker.data.repo.ItemRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,7 +34,7 @@ class StatsScreenViewModel @Inject constructor(
             itemRepo.getItemsByMonth(month, year).collect { items ->
                 _state.value = _state.value.copy(
                     date = LocalDate.now(),
-                    items = items
+                    items = items.sortedBy { it.date }
                 )
             }
         }
@@ -51,31 +52,20 @@ class StatsScreenViewModel @Inject constructor(
         }
     }
 
-    private fun fetchItems(date : LocalDate) {
-        viewModelScope.launch {
-            itemRepo.getItemsByDate(date.format(DateTimeFormatter.ISO_LOCAL_DATE)).collect { items ->
-                _state.value = _state.value.copy(
-                    date = date,
-                    items = items
-                )
-            }
-        }
-    }
-
     fun onEvent(event : StatsScreenEvent) {
         when(event) {
             is StatsScreenEvent.OnDateChanged -> {
                 when (event.which)
                 {
                     "Month" -> {
-                        viewModelScope.launch {
-                            val month = String.format("%02d", event.date.monthValue)
-                            val year = event.date.year.toString()
+                        val month = String.format("%02d", event.date.monthValue)
+                        val year = event.date.year.toString()
 
+                        viewModelScope.launch {
                             itemRepo.getItemsByMonth(month, year).collect { items ->
                                 _state.value = _state.value.copy(
                                     date = event.date,
-                                    items = items
+                                    items = items.sortedBy { it.date }
                                 )
                             }
                         }
@@ -87,12 +77,19 @@ class StatsScreenViewModel @Inject constructor(
                             itemRepo.getItemsByYear(year).collect { items ->
                                 _state.value = _state.value.copy(
                                     date = event.date,
-                                    items = items
+                                    items = items.sortedBy { it.date }
                                 )
                             }
                         }
                     }
                 }
+            }
+            is StatsScreenEvent.OnTypeChanged -> {
+                val type = if (_state.value.type == ItemType.DEBIT) ItemType.CREDIT else ItemType.DEBIT
+                _state.value = _state.value.copy(
+                    items = _state.value.items,
+                    type = type
+                )
             }
         }
     }
