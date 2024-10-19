@@ -67,6 +67,8 @@ class StatsScreenViewModel @Inject constructor(
                                     date = event.date,
                                     items = items.sortedBy { it.date }
                                 )
+
+                                Log.d("StatsScreenViewModel : Month", "Items: ${items.size}")
                             }
                         }
                     }
@@ -79,6 +81,8 @@ class StatsScreenViewModel @Inject constructor(
                                     date = event.date,
                                     items = items.sortedBy { it.date }
                                 )
+
+                                Log.d("StatsScreenViewModel : Year", "Items: ${items.size}")
                             }
                         }
                     }

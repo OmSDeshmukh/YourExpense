@@ -64,16 +64,15 @@ class MainActivity : ComponentActivity() {
 }
 
 /*  ISSUES
+
     Pots Screen :-
             Pot selected must be highlighted.
-    Stats Screen :-
-            Year to Month items are not changing
-            Graph is not getting rendered after date change or Income/Expense change.
     Profile Screen :-
             Balance is showing only subtracted pots value sometimes.
 */
 
 /*  TODO
+    Show Dialog for the extracted Items and implementation of the same.
     Ability to crop the image.
     Adding the image from the gallery.
 */

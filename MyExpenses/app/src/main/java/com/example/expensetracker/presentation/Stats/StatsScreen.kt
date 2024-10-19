@@ -69,6 +69,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -78,6 +79,7 @@ import com.example.expensetracker.presentation.destinations.PotsScreenRouteDesti
 import com.example.expensetracker.presentation.destinations.ProfileScreenRouteDestination
 import com.example.expensetracker.presentation.theme.color1
 import com.example.expensetracker.presentation.theme.color4
+import com.example.myexpenses.R
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import java.time.Instant
@@ -154,8 +156,7 @@ private fun StatsScreen(
                                 }
                         )
 
-                        when( selectedOption )
-                        {
+                        when( selectedOption ) {
                             "Monthly" -> { Text("${state.date.month}, ${state.date.year}", fontSize = 16.sp ) }
                             "Yearly" -> { Text( "${state.date.year}", fontSize = 16.sp ) }
                         }
@@ -189,9 +190,8 @@ private fun StatsScreen(
                             DropdownMenuItem(
                                 onClick = {
                                     selectedOption = option
-                                    when (selectedOption)
-                                    {
-                                        "Month" -> { onEvent(StatsScreenEvent.OnDateChanged(state.date, "Month")) }
+                                    when (selectedOption) {
+                                        "Monthly" -> { onEvent(StatsScreenEvent.OnDateChanged(state.date, "Month")) }
                                         "Yearly" -> { onEvent(StatsScreenEvent.OnDateChanged(state.date, "Year")) }
                                     }
                                     expanded = false
@@ -337,32 +337,39 @@ private fun StatsScreen(
 
                         val totalSpending = categories.values.sum()
 
-                        Canvas(
-                            modifier = Modifier
-                                .size(200.dp)
-                        ) {
-                            var startAngle = 0f
-                            val radius = size.minDimension / 3
-                            val thickness = radius * 0.3f
+                        Box {
+                            Canvas(
+                                modifier = Modifier.size(200.dp)
+                            ) {
+                                var startAngle = 0f
+                                val radius = size.minDimension / 3
+                                val thickness = radius * 0.3f
 
-                            categories.forEach { categoryEntry ->
-                                val category = state.categories.find { it.id == categoryEntry.key }
-                                if( category != null )
-                                {
-                                    val sweepAngle = (categoryEntry.value / totalSpending * 360f).toFloat()
+                                categories.forEach { categoryEntry ->
+                                    val category = state.categories.find { it.id == categoryEntry.key }
+                                    if( category != null )
+                                    {
+                                        val sweepAngle = (categoryEntry.value / totalSpending * 360f).toFloat()
 
-                                    drawArc(
-                                        color = Color(category.color),
-                                        startAngle = startAngle,
-                                        sweepAngle = sweepAngle,
-                                        useCenter = false,
-                                        topLeft = Offset(size.width / 2 - radius, size.height / 2 - radius),
-                                        size = Size(radius * 2, radius * 2),
-                                        style = Stroke(width = thickness)
-                                    )
-                                    startAngle += sweepAngle
+                                        drawArc(
+                                            color = Color(category.color),
+                                            startAngle = startAngle,
+                                            sweepAngle = sweepAngle,
+                                            useCenter = false,
+                                            topLeft = Offset(size.width / 2 - radius, size.height / 2 - radius),
+                                            size = Size(radius * 2, radius * 2),
+                                            style = Stroke(width = thickness)
+                                        )
+                                        startAngle += sweepAngle
+                                    }
                                 }
                             }
+
+                            Icon(
+                                painter = painterResource(id = R.drawable.categories),
+                                contentDescription = "Add",
+                                tint = Color.Black,
+                                modifier = Modifier.size(56.dp).align(Alignment.Center))
                         }
                     }
                 }   // Pie Chart
@@ -466,44 +473,42 @@ private fun StatsScreen(
                     }
                 }   // All Categories
 
-                item {
-                    Column {
-                        state.items.forEach {
-                            if( it.type == state.type )
-                                Text(text = it.name, color = color4)
-                        }
-                    }
-                }   // All Items
+//                item {
+//                    Column {
+//                        state.items.forEach {
+//                            if( it.type == state.type )
+//                                Text(text = it.name, color = color4)
+//                        }
+//                    }
+//                }   // All Items
 
                 item { Spacer(modifier = Modifier.height(75.dp)) }
 
                 item {
                     if( state.items.isNotEmpty() ) {
-                        val spendings by remember {
-                            derivedStateOf {
-                                val graphItems = state.items.sortedBy { it.date }.filter { it.type == state.type }
+                        val spendings = remember(state.items, state.type, selectedOption) {
+                            val graphItems = state.items.sortedBy { it.date }.filter { it.type == state.type }
 
-                                when (selectedOption) {
-                                    "Monthly" -> {
-                                        graphItems
-                                            .groupBy { it.date }
-                                            .map { (date, itemsForDay) ->
-                                                val totalAmountForDay = itemsForDay.sumOf { it.amount }
-                                                date to totalAmountForDay
-                                            }
-                                            .sortedBy { it.first }
-                                    }
-                                    "Yearly" -> {
-                                        graphItems
-                                            .groupBy { it.date.month }
-                                            .map { (month, itemsForMonth) ->
-                                                val totalAmountForMonth = itemsForMonth.sumOf { it.amount }
-                                                month to totalAmountForMonth
-                                            }
-                                            .sortedBy { it.first }
-                                    }
-                                    else -> emptyList()
+                            when (selectedOption) {
+                                "Monthly" -> {
+                                    graphItems
+                                        .groupBy { it.date }
+                                        .map { (date, itemsForDay) ->
+                                            val totalAmountForDay = itemsForDay.sumOf { it.amount }
+                                            date to totalAmountForDay
+                                        }
+                                        .sortedBy { it.first }
                                 }
+                                "Yearly" -> {
+                                    graphItems
+                                        .groupBy { it.date.month }
+                                        .map { (month, itemsForMonth) ->
+                                            val totalAmountForMonth = itemsForMonth.sumOf { it.amount }
+                                            month to totalAmountForMonth
+                                        }
+                                        .sortedBy { it.first }
+                                }
+                                else -> emptyList()
                             }
                         }
 
@@ -524,9 +529,7 @@ private fun StatsScreen(
                         }
 
                         Canvas(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
+                            modifier = Modifier.fillMaxWidth().height(300.dp)
                         ) {
                             val canvasWidth = size.width
                             val canvasHeight = size.height
@@ -535,13 +538,13 @@ private fun StatsScreen(
                             spendings.indices.forEach { i ->
                                 drawContext.canvas.nativeCanvas.apply {
                                     drawText(
-                                        if( selectedOption.equals("Monthly") )
-                                        {
+                                        if(selectedOption == "Monthly") {
                                             val date = spendings[i].first.toString()
                                             date.substring(8, 10)
                                         }
                                         else
                                             spendings[i].first.toString(),
+
                                         spacing + i * spacePerItem,
                                         canvasHeight - 5,
                                         textPaint
