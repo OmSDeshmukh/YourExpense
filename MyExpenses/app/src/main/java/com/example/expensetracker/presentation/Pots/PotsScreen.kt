@@ -298,6 +298,24 @@ private fun PotsScreen(
                     modifier = Modifier.padding(16.dp))
             }
 
+            val totalSofar = state.pots.sumOf { it.sofar }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Total Savings Done",
+                    color = color4,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(16.dp))
+
+                Text("Rs. $totalSofar /-",
+                    color = color4,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(16.dp))
+            }
+
             state.pots.forEach {
                 SavingsCard(
                     pot = it,
@@ -338,9 +356,7 @@ fun SavingsCard(
             title = { Text(pot.name) },
             text = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -438,20 +454,19 @@ fun SavingsCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .pointerInput(Unit){
-                 detectTapGestures(
-                     onLongPress = {
-                         onPotClicked()
-                         onLongPress()
-                     },
-                     onTap = {
-                         if( pot.sofar < pot.goal )
-                         {
-                             onPotClicked()
-                             showDialog = true
-                         }
-                     }
-                 )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = {
+                        onPotClicked()
+                        onLongPress()
+                    },
+                    onTap = {
+                        if (pot.sofar < pot.goal) {
+                            onPotClicked()
+                            showDialog = true
+                        }
+                    }
+                )
             },
         colors = CardDefaults.cardColors(
             containerColor = color2,
@@ -463,8 +478,7 @@ fun SavingsCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
-                modifier = Modifier
-                    .padding(8.dp),
+                modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(pot.name, color = Color.White)

@@ -63,14 +63,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/*  ISSUES
-
-    Pots Screen :-
-            Pot selected must be highlighted.
-    Profile Screen :-
-            Balance is showing only subtracted pots value sometimes.
-*/
-
 /*  TODO
     Show Dialog for the extracted Items and implementation of the same.
     Ability to crop the image.

@@ -50,7 +50,8 @@ class ProfileScreenViewModel @Inject constructor(
 
                 _state.value = _state.value.copy(
                     totalIncome = totalIncome,
-                    totalExpense = totalExpense
+                    totalExpense = totalExpense,
+                    balance = _state.value.balance + (totalIncome - totalExpense)
                 )
             }
         }
