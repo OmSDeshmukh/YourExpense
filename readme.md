@@ -78,6 +78,7 @@ The following libraries are required for the machine learning pipeline:
    pip install easyocr
    pip install cohere
    pip install python-dotenv
+   pip install flask
    ```
 
 4. Set up the environment variables (create a `.env` file):
